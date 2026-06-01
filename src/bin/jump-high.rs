@@ -15,6 +15,7 @@ use std::{io::stdout, time::{Duration, Instant}};
 const TICK_MS: u64 = 33;
 const GRAVITY: f64 = 0.5;
 const MAX_CHARGE: f64 = 30.0;
+const TAP_HOP: f64 = 5.0; // a quick tap = a small, visible hop
 const CHARGE_RATE: f64 = 0.6;
 const JUMP_POWER: f64 = -1.0;
 const HORIZ_SPEED: f64 = 1.0;
@@ -193,8 +194,14 @@ impl Game {
                 // in (>=2 bytes) gaps are tiny, so 4 ticks (~130ms) is snappy.
                 // Before repeat starts, wait longer (~330ms) to not misfire during
                 // the OS key-repeat initial delay.
-                let thresh = if self.space_count >= 2 { 4 } else { 18 };
+                let quick_tap = self.space_count < 2; // no key-repeat seen → just a tap
+                let thresh = if quick_tap { 18 } else { 4 };
                 if self.ticks_since_space >= thresh {
+                    if quick_tap {
+                        // A tap is a tiny hop, not a charged jump — don't let the
+                        // wait-for-release window pump up the charge.
+                        self.charge = self.charge.min(TAP_HOP);
+                    }
                     self.jump();
                 }
             }
