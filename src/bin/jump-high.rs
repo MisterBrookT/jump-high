@@ -19,6 +19,7 @@ const TAP_HOP: f64 = 5.0; // a quick tap = a small, visible hop
 const CHARGE_RATE: f64 = 0.6;
 const JUMP_POWER: f64 = -1.0;
 const HORIZ_SPEED: f64 = 1.0;
+const AIR_SPEED: f64 = 2.5; // mid-air steering speed
 const PLAYER_WIDTH: f64 = 7.0;
 const PLAYER_HEIGHT: f64 = 4.0;
 
@@ -275,6 +276,21 @@ impl Game {
         }
     }
 
+    fn steer(&mut self, dir: f64) {
+        if self.paused {
+            return;
+        }
+        match self.state {
+            // On the ground / charging: set the aim for the next jump.
+            State::Grounded | State::Charging => self.dir = dir,
+            // In the air: steer horizontally (turn mid-jump; ↑ straightens).
+            State::Airborne => {
+                self.dir = dir;
+                self.vel_x = dir * AIR_SPEED;
+            }
+        }
+    }
+
     fn jump(&mut self) {
         if self.state == State::Charging {
             let c = self.charge.max(2.0); // quick tap → small but visible hop
@@ -363,21 +379,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                         }
-                        KeyCode::Up if press || repeat => {
-                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
-                                game.dir = 0.0; // aim straight up; SPACE still does the charging
-                            }
-                        }
-                        KeyCode::Left if press || repeat => {
-                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
-                                game.dir = -1.0;
-                            }
-                        }
-                        KeyCode::Right if press || repeat => {
-                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
-                                game.dir = 1.0;
-                            }
-                        }
+                        KeyCode::Up if press || repeat => game.steer(0.0),
+                        KeyCode::Left if press || repeat => game.steer(-1.0),
+                        KeyCode::Right if press || repeat => game.steer(1.0),
                         _ => {}
                     }
                 }
