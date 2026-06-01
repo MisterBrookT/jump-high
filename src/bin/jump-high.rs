@@ -217,7 +217,7 @@ impl Game {
                                 self.py = p.y - PLAYER_HEIGHT;
                                 self.vel_y = 0.0;
                                 self.vel_x = 0.0;
-                                self.dir = 0.0;
+                                // keep self.dir — the dog stays facing the last jump direction
                                 self.state = State::Grounded;
                                 break;
                             }
@@ -316,7 +316,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             return Ok(());
                         }
                         KeyCode::Char('p') if press => game.toggle_pause(),
-                        code @ (KeyCode::Char(' ') | KeyCode::Up) => {
+                        KeyCode::Char(' ') => {
                             if game.paused {
                                 continue;
                             }
@@ -332,10 +332,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         game.charge = 0.0;
                                         game.space_count = 0;
                                         game.ticks_since_space = 0;
-                                        // ↑ charges a straight-up jump; ←→ can still angle it
-                                        if code == KeyCode::Up {
-                                            game.dir = 0.0;
-                                        }
+                                        // dir is kept from the last jump / arrow keys
                                     }
                                     State::Charging => {
                                         game.space_count += 1;
@@ -343,6 +340,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     }
                                     State::Airborne => {}
                                 }
+                            }
+                        }
+                        KeyCode::Up if press || repeat => {
+                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
+                                game.dir = 0.0; // aim straight up; SPACE still does the charging
                             }
                         }
                         KeyCode::Left if press || repeat => {
@@ -490,7 +492,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Paragraph::new(hud_line).render(Rect::new(0, 0, area.width, 1), buf);
 
             // Controls hint
-            let hint = " ↑ hold = charge · release = jump up · ←→ aim · p pause · q quit ";
+            let hint = " SPACE hold = charge · release = jump · ←↑→ aim · p pause · q quit ";
             let hint_line = Line::from(hint).style(Style::default().fg(Color::Gray));
             Paragraph::new(hint_line).render(Rect::new(0, area.height - 1, area.width, 1), buf);
 

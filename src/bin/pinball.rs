@@ -260,9 +260,10 @@ fn main() -> io::Result<()> {
             let area = f.area();
             let total_w = TABLE_W + 2;
             let total_h = TABLE_H + 5; // table + HUD
+            let play_h = area.height.saturating_sub(1); // keep the last row for the hint
             let ox = area.width.saturating_sub(total_w) / 2;
-            let oy = area.height.saturating_sub(total_h) / 2;
-            let rect = Rect::new(ox, oy, total_w.min(area.width), total_h.min(area.height));
+            let oy = play_h.saturating_sub(total_h) / 2;
+            let rect = Rect::new(ox, oy, total_w.min(area.width), total_h.min(play_h));
 
             let mut lines: Vec<Line> = Vec::new();
             let now = Instant::now();
