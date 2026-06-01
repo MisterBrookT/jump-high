@@ -17,7 +17,7 @@ const GRAVITY: f64 = 0.5;
 const MAX_CHARGE: f64 = 30.0;
 const CHARGE_RATE: f64 = 0.6;
 const JUMP_POWER: f64 = -1.0;
-const HORIZ_SPEED: f64 = 0.6;
+const HORIZ_SPEED: f64 = 1.0;
 const PLAYER_WIDTH: f64 = 7.0;
 const PLAYER_HEIGHT: f64 = 4.0;
 
@@ -26,8 +26,13 @@ fn pseudo_rand(state: &mut u64) -> u64 {
     *state >> 33
 }
 
-fn rand_platform_width(state: &mut u64) -> u16 {
-    (pseudo_rand(state) % 5 + 4) as u16 // 4..=8
+fn rand_platform_width(state: &mut u64, difficulty: u8) -> u16 {
+    let r = pseudo_rand(state);
+    match difficulty {
+        1 => (r % 10 + 12) as u16, // easy: 12..=21 (wide)
+        2 => (r % 16 + 5) as u16,  // medium: 5..=20 (wide & narrow mixed)
+        _ => (r % 5 + 4) as u16,   // hard: 4..=8 (narrow)
+    }
 }
 
 fn rand_platform_x(state: &mut u64, area_width: u16, plat_width: u16) -> u16 {
@@ -131,11 +136,12 @@ struct Game {
     paused: bool,
     space_count: u32,
     ticks_since_space: u32,
+    difficulty: u8,
     rng_state: u64,
 }
 
 impl Game {
-    fn new(w: u16, h: u16) -> Self {
+    fn new(w: u16, h: u16, difficulty: u8) -> Self {
         let mut rng_state: u64 = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -147,7 +153,7 @@ impl Game {
         let mut rng_y = (h as f64) - 8.0;
         let mut idx = 1usize;
         while rng_y > -(h as f64 * 5.0) {
-            let pw = rand_platform_width(&mut rng_state);
+            let pw = rand_platform_width(&mut rng_state, difficulty);
             let x = rand_platform_x(&mut rng_state, w, pw);
             platforms.push(Platform { x, y: rng_y, width: pw, style: idx % PLAT_STYLES.len() });
             rng_y -= 5.0 + (platforms.len() as f64 * 0.1).min(3.0);
@@ -170,6 +176,7 @@ impl Game {
             space_count: 0,
             ticks_since_space: 0,
             rng_state,
+            difficulty,
         }
     }
 
@@ -248,7 +255,7 @@ impl Game {
         if highest > top_visible {
             let mut y = highest - 6.0;
             for _ in 0..5 {
-                let pw = rand_platform_width(&mut self.rng_state);
+                let pw = rand_platform_width(&mut self.rng_state, self.difficulty);
                 let x = rand_platform_x(&mut self.rng_state, self.width, pw);
                 let style = self.platforms.len() % PLAT_STYLES.len();
                 self.platforms.push(Platform { x, y, width: pw, style });
@@ -293,7 +300,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let size = terminal.size()?;
-    let mut game = Game::new(size.width, size.height);
+    let mut game = Game::new(size.width, size.height, 1);
 
     loop {
         let frame_start = Instant::now();
@@ -316,6 +323,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             return Ok(());
                         }
                         KeyCode::Char('p') if press => game.toggle_pause(),
+                        KeyCode::Char(c @ '1'..='3') if press => {
+                            game = Game::new(game.width, game.height, c as u8 - b'0');
+                        }
                         KeyCode::Char(' ') => {
                             if game.paused {
                                 continue;
@@ -487,12 +497,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // HUD
             let cur_height = (-(game.py - (game.height as f64 - 2.0 - PLAYER_HEIGHT))).max(0.0);
-            let hud = format!(" Height: {:.0}  Best: {:.0} ", cur_height, game.max_height);
+            let hud = format!(" Height: {:.0}  Best: {:.0}  Lv {} ", cur_height, game.max_height, game.difficulty);
             let hud_line = Line::from(hud).style(Style::default().fg(Color::White).bg(Color::DarkGray));
             Paragraph::new(hud_line).render(Rect::new(0, 0, area.width, 1), buf);
 
             // Controls hint
-            let hint = " SPACE hold = charge · release = jump · ←↑→ aim · p pause · q quit ";
+            let hint = " SPACE charge · ←↑→ aim · 1/2/3 level · p pause · q quit ";
             let hint_line = Line::from(hint).style(Style::default().fg(Color::Gray));
             Paragraph::new(hint_line).render(Rect::new(0, area.height - 1, area.width, 1), buf);
 
