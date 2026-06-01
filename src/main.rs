@@ -49,6 +49,22 @@ const SPRITE_JUMP: [[(char, Color); 7]; 4] = [
     [(' ', C_NONE), (' ', C_NONE), ('▀', C_BODY), ('▀', C_BODY), ('▀', C_BODY), (' ', C_NONE), (' ', C_NONE)],
 ];
 
+// Standing facing RIGHT (nose points right, tail on left)
+const SPRITE_STAND_RIGHT: [[(char, Color); 7]; 4] = [
+    [(' ', C_NONE), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), (' ', C_NONE)],
+    [('╴', C_TAIL), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('▄', C_BODY)],
+    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+];
+
+// Standing facing LEFT (same as original SPRITE_STAND — nose points left, tail on right)
+const SPRITE_STAND_LEFT: [[(char, Color); 7]; 4] = [
+    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
+    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╶', C_TAIL)],
+    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+];
+
 // Platform styles
 const PLAT_STYLES: &[&[char]] = &[
     &['▓', '▓', '▒', '▓', '▓', '▒', '▓', '▓', '▒', '▓'],
@@ -57,9 +73,9 @@ const PLAT_STYLES: &[&[char]] = &[
 ];
 
 const PLAT_COLORS: &[(u8, u8, u8)] = &[
-    (80, 160, 80),
-    (100, 140, 100),
-    (60, 130, 90),
+    (220, 130, 50),
+    (200, 110, 40),
+    (180, 100, 30),
 ];
 
 const GROUND_CHAR: char = '▓';
@@ -167,6 +183,7 @@ impl Game {
                                 self.py = p.y - PLAYER_HEIGHT;
                                 self.vel_y = 0.0;
                                 self.vel_x = 0.0;
+                                self.dir = 0.0;
                                 self.state = State::Grounded;
                                 break;
                             }
@@ -262,12 +279,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Char(' ') => {
                             if game.paused { continue; }
-                            // Toggle model: first press = start charge, second = jump
                             match game.state {
                                 State::Grounded => {
                                     game.state = State::Charging;
                                     game.charge = 0.0;
-                                    game.dir = 0.0;
+                                    // dir is NOT reset — keeps the direction set by arrow keys
                                 }
                                 State::Charging => {
                                     game.jump();
@@ -349,7 +365,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Draw dog sprite
             let dog_sx = game.px as u16;
             let dog_sy = (game.py - game.camera_y) as i16;
-            let sprite = if game.state == State::Airborne { &SPRITE_JUMP } else { &SPRITE_STAND };
+            let sprite = if game.state == State::Airborne {
+                &SPRITE_JUMP
+            } else {
+                match game.dir as i32 {
+                    -1 => &SPRITE_STAND_LEFT,
+                    1 => &SPRITE_STAND_RIGHT,
+                    _ => &SPRITE_STAND,
+                }
+            };
 
             for (row, line) in sprite.iter().enumerate() {
                 let sy = dog_sy + row as i16;
