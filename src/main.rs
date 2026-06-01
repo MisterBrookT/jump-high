@@ -109,6 +109,8 @@ struct Game {
     width: u16,
     height: u16,
     paused: bool,
+    space_count: u32,        // space bytes seen this charge (>=2 means key-repeat kicked in)
+    ticks_since_space: u32,   // ticks since last space byte (for release detection)
 }
 
 impl Game {
@@ -145,6 +147,8 @@ impl Game {
             width: w,
             height: h,
             paused: false,
+            space_count: 0,
+            ticks_since_space: 0,
         }
     }
 
@@ -154,6 +158,15 @@ impl Game {
             State::Grounded => {}
             State::Charging => {
                 self.charge = (self.charge + CHARGE_RATE).min(MAX_CHARGE);
+                self.ticks_since_space += 1;
+                // Release = no space byte for a while. Once key-repeat has kicked
+                // in (>=2 bytes) gaps are tiny, so 4 ticks (~130ms) is snappy.
+                // Before repeat starts, wait longer (~330ms) to not misfire during
+                // the OS key-repeat initial delay.
+                let thresh = if self.space_count >= 2 { 4 } else { 10 };
+                if self.ticks_since_space >= thresh {
+                    self.jump();
+                }
             }
             State::Airborne => {
                 self.vel_y += GRAVITY;
@@ -231,7 +244,7 @@ impl Game {
     fn jump(&mut self) {
         if self.state == State::Charging && self.charge > 0.0 {
             self.vel_y = JUMP_POWER * self.charge * 0.4;
-            self.vel_x = self.dir * HORIZ_SPEED * self.charge * 0.3;
+            self.vel_x = self.dir * HORIZ_SPEED * self.charge * 0.18;
             self.state = State::Airborne;
             self.charge = 0.0;
         }
@@ -283,10 +296,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 State::Grounded => {
                                     game.state = State::Charging;
                                     game.charge = 0.0;
+                                    game.space_count = 0;
+                                    game.ticks_since_space = 0;
                                     // dir is NOT reset — keeps the direction set by arrow keys
                                 }
                                 State::Charging => {
-                                    game.jump();
+                                    // Held: key-repeat byte → keep charging, reset release timer
+                                    game.space_count += 1;
+                                    game.ticks_since_space = 0;
                                 }
                                 State::Airborne => {}
                             }
