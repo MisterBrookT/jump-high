@@ -130,6 +130,7 @@ struct Game {
     state: State,
     camera_y: f64,
     max_height: f64,
+    cur_height: f64,
     platforms: Vec<Platform>,
     width: u16,
     height: u16,
@@ -169,6 +170,7 @@ impl Game {
             state: State::Grounded,
             camera_y: 0.0,
             max_height: 0.0,
+            cur_height: 0.0,
             platforms,
             width: w,
             height: h,
@@ -243,10 +245,12 @@ impl Game {
             self.camera_y = self.py - self.height as f64 * 0.7;
         }
 
-        // Score
-        let height = -(self.py - (self.height as f64 - 2.0 - PLAYER_HEIGHT));
-        if height > self.max_height {
-            self.max_height = height;
+        // Score = height of the platform you're standing on (not the airborne float)
+        if self.state == State::Grounded {
+            self.cur_height = -(self.py - (self.height as f64 - 2.0 - PLAYER_HEIGHT));
+            if self.cur_height > self.max_height {
+                self.max_height = self.cur_height;
+            }
         }
 
         // Generate more platforms
@@ -496,14 +500,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // HUD
-            let cur_height = (-(game.py - (game.height as f64 - 2.0 - PLAYER_HEIGHT))).max(0.0);
-            let hud = format!(" Height: {:.0}  Best: {:.0}  Lv {} ", cur_height, game.max_height, game.difficulty);
-            let hud_line = Line::from(hud).style(Style::default().fg(Color::White).bg(Color::DarkGray));
+            let hud = format!(" Height: {:.0}  Best: {:.0}  Lv {} ", game.cur_height.max(0.0), game.max_height, game.difficulty);
+            let hud_line = Line::from(hud).style(
+                Style::default()
+                    .fg(Color::Rgb(255, 245, 210))
+                    .bg(Color::Rgb(70, 55, 40))
+                    .add_modifier(Modifier::BOLD),
+            );
             Paragraph::new(hud_line).render(Rect::new(0, 0, area.width, 1), buf);
 
             // Controls hint
             let hint = " SPACE charge · ←↑→ aim · 1/2/3 level · p pause · q quit ";
-            let hint_line = Line::from(hint).style(Style::default().fg(Color::Gray));
+            let hint_line = Line::from(hint).style(Style::default().fg(Color::Rgb(205, 200, 190)));
             Paragraph::new(hint_line).render(Rect::new(0, area.height - 1, area.width, 1), buf);
 
             // Pause banner

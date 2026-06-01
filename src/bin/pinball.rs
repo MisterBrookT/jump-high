@@ -391,7 +391,7 @@ fn main() -> io::Result<()> {
 
             // Bottom hint line
             let hint = " SPACE launch · ←/a left flip · →/l right flip · p pause · r restart · q quit ";
-            let hint_line = Line::from(hint).style(Style::default().fg(Color::DarkGray));
+            let hint_line = Line::from(hint).style(Style::default().fg(Color::Rgb(205, 200, 190)));
             let hint_rect = Rect::new(0, area.height.saturating_sub(1), area.width, 1);
             f.render_widget(Paragraph::new(hint_line), hint_rect);
         })?;
