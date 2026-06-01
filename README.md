@@ -1,8 +1,28 @@
-# Jump High
+# Jump High 🐕
 
-A terminal Doodle-Jump-style game built with Rust + ratatui.
+A **Jump King-style** terminal platformer built with Rust + ratatui.
 
-![screenshot](screenshot.png)
+Hold SPACE to charge your jump, release to leap. Miss a platform and you fall all the way down. No checkpoints, no mercy — just you, a small dog, and gravity.
+
+## How to Play
+
+The core mechanic is simple but punishing:
+
+1. **Hold SPACE** to charge your jump (a power bar fills up)
+2. **Press ←/→** while charging to aim your jump direction
+3. **Release SPACE** to jump — the longer you charged, the higher you go
+4. Land on a platform or **fall all the way down** to whatever catches you
+
+There is no game over. You just fall and try again. Like Jump King.
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| SPACE (hold) | Charge jump power |
+| SPACE (release) | Jump |
+| ← → | Aim direction (while charging) |
+| q | Quit |
 
 ## Install
 
@@ -10,14 +30,9 @@ A terminal Doodle-Jump-style game built with Rust + ratatui.
 cargo install --path .
 ```
 
-## Controls
+## Score
 
-| Key | Action |
-|-----|--------|
-| ← → | Move left/right |
-| q / Esc | Quit |
-
-Character auto-jumps when landing on a platform. Score = max height reached.
+Score = maximum height reached. The platforms get trickier as you climb.
 
 ## License
 

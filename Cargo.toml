@@ -1,11 +1,10 @@
 [package]
 name = "jump-high"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "A terminal Doodle-Jump-style game"
+description = "A Jump King-style terminal platformer — hold SPACE to charge, release to jump, don't fall!"
 license = "MIT"
 
 [dependencies]
 ratatui = "=0.29.0"
 crossterm = "=0.28.1"
-rand = "=0.8.5"
