@@ -1,6 +1,12 @@
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    event::{
+        self, Event, KeyCode, KeyEventKind, KeyboardEnhancementFlags,
+        PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    },
+    terminal::{
+        disable_raw_mode, enable_raw_mode, supports_keyboard_enhancement, EnterAlternateScreen,
+        LeaveAlternateScreen,
+    },
     ExecutableCommand,
 };
 use ratatui::{prelude::*, widgets::*};
@@ -252,9 +258,10 @@ impl Game {
     }
 
     fn jump(&mut self) {
-        if self.state == State::Charging && self.charge > 0.0 {
-            self.vel_y = JUMP_POWER * self.charge * 0.2;
-            self.vel_x = self.dir * HORIZ_SPEED * self.charge * 0.18;
+        if self.state == State::Charging {
+            let c = self.charge.max(2.0); // quick tap → small but visible hop
+            self.vel_y = JUMP_POWER * c * 0.2;
+            self.vel_x = self.dir * HORIZ_SPEED * c * 0.18;
             self.state = State::Airborne;
             self.charge = 0.0;
         }
@@ -276,6 +283,12 @@ impl Game {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     enable_raw_mode()?;
+    let kitty = supports_keyboard_enhancement().unwrap_or(false);
+    if kitty {
+        let _ = stdout().execute(PushKeyboardEnhancementFlags(
+            KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
+        ));
+    }
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
@@ -289,41 +302,51 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         while event::poll(Duration::from_millis(0))? {
             match event::read()? {
                 Event::Key(key) => {
-                    if key.kind != KeyEventKind::Press { continue; }
+                    let press = key.kind == KeyEventKind::Press;
+                    let repeat = key.kind == KeyEventKind::Repeat;
+                    let release = key.kind == KeyEventKind::Release;
                     match key.code {
-                        KeyCode::Char('q') => {
+                        KeyCode::Char('q') if press => {
+                            if kitty {
+                                let _ = stdout().execute(PopKeyboardEnhancementFlags);
+                            }
                             disable_raw_mode()?;
                             stdout().execute(LeaveAlternateScreen)?;
                             println!("Max height: {:.0}", game.max_height);
                             return Ok(());
                         }
-                        KeyCode::Char('p') => {
-                            game.toggle_pause();
-                        }
+                        KeyCode::Char('p') if press => game.toggle_pause(),
                         KeyCode::Char(' ') => {
-                            if game.paused { continue; }
-                            match game.state {
-                                State::Grounded => {
-                                    game.state = State::Charging;
-                                    game.charge = 0.0;
-                                    game.space_count = 0;
-                                    game.ticks_since_space = 0;
-                                    // dir is NOT reset — keeps the direction set by arrow keys
+                            if game.paused {
+                                continue;
+                            }
+                            if release {
+                                // Real key-release (kitty) → jump now: snappy, taps = small hops
+                                if game.state == State::Charging {
+                                    game.jump();
                                 }
-                                State::Charging => {
-                                    // Held: key-repeat byte → keep charging, reset release timer
-                                    game.space_count += 1;
-                                    game.ticks_since_space = 0;
+                            } else if press || repeat {
+                                match game.state {
+                                    State::Grounded => {
+                                        game.state = State::Charging;
+                                        game.charge = 0.0;
+                                        game.space_count = 0;
+                                        game.ticks_since_space = 0;
+                                    }
+                                    State::Charging => {
+                                        game.space_count += 1;
+                                        game.ticks_since_space = 0;
+                                    }
+                                    State::Airborne => {}
                                 }
-                                State::Airborne => {}
                             }
                         }
-                        KeyCode::Left => {
+                        KeyCode::Left if press || repeat => {
                             if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
                                 game.dir = -1.0;
                             }
                         }
-                        KeyCode::Right => {
+                        KeyCode::Right if press || repeat => {
                             if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
                                 game.dir = 1.0;
                             }
