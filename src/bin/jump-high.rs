@@ -12,9 +12,23 @@ const MAX_CHARGE: f64 = 30.0;
 const CHARGE_RATE: f64 = 0.6;
 const JUMP_POWER: f64 = -1.0;
 const HORIZ_SPEED: f64 = 0.6;
-const PLATFORM_WIDTH: u16 = 10;
 const PLAYER_WIDTH: f64 = 7.0;
 const PLAYER_HEIGHT: f64 = 4.0;
+
+fn pseudo_rand(state: &mut u64) -> u64 {
+    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state >> 33
+}
+
+fn rand_platform_width(state: &mut u64) -> u16 {
+    (pseudo_rand(state) % 5 + 4) as u16 // 4..=8
+}
+
+fn rand_platform_x(state: &mut u64, area_width: u16, plat_width: u16) -> u16 {
+    let max_x = area_width.saturating_sub(plat_width) as u64;
+    if max_x == 0 { return 0; }
+    (pseudo_rand(state) % max_x) as u16
+}
 
 // Pixel-art dog sprite colors
 const C_BODY: Color = Color::Rgb(200, 150, 90);   // warm tan
@@ -109,28 +123,28 @@ struct Game {
     width: u16,
     height: u16,
     paused: bool,
-    space_count: u32,        // space bytes seen this charge (>=2 means key-repeat kicked in)
-    ticks_since_space: u32,   // ticks since last space byte (for release detection)
+    space_count: u32,
+    ticks_since_space: u32,
+    rng_state: u64,
 }
 
 impl Game {
     fn new(w: u16, h: u16) -> Self {
+        let mut rng_state: u64 = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
         let mut platforms = Vec::new();
-        // Ground
+        // Ground (full-width)
         platforms.push(Platform { x: 0, y: (h as f64) - 2.0, width: w, style: 0 });
         // Generate platforms going up
         let mut rng_y = (h as f64) - 8.0;
-        let mut side = false;
         let mut idx = 1usize;
         while rng_y > -(h as f64 * 5.0) {
-            let x = if side {
-                (w as f64 * 0.55) as u16
-            } else {
-                (w as f64 * 0.1) as u16
-            };
-            platforms.push(Platform { x, y: rng_y, width: PLATFORM_WIDTH, style: idx % PLAT_STYLES.len() });
+            let pw = rand_platform_width(&mut rng_state);
+            let x = rand_platform_x(&mut rng_state, w, pw);
+            platforms.push(Platform { x, y: rng_y, width: pw, style: idx % PLAT_STYLES.len() });
             rng_y -= 5.0 + (platforms.len() as f64 * 0.1).min(3.0);
-            side = !side;
             idx += 1;
         }
         Self {
@@ -149,6 +163,7 @@ impl Game {
             paused: false,
             space_count: 0,
             ticks_since_space: 0,
+            rng_state,
         }
     }
 
@@ -226,24 +241,19 @@ impl Game {
         let highest = self.platforms.iter().map(|p| p.y).fold(f64::MAX, f64::min);
         if highest > top_visible {
             let mut y = highest - 6.0;
-            let mut side = (self.platforms.len() % 2) == 0;
             for _ in 0..5 {
-                let x = if side {
-                    (self.width as f64 * 0.55) as u16
-                } else {
-                    (self.width as f64 * 0.1) as u16
-                };
+                let pw = rand_platform_width(&mut self.rng_state);
+                let x = rand_platform_x(&mut self.rng_state, self.width, pw);
                 let style = self.platforms.len() % PLAT_STYLES.len();
-                self.platforms.push(Platform { x, y, width: PLATFORM_WIDTH, style });
+                self.platforms.push(Platform { x, y, width: pw, style });
                 y -= 5.0 + (self.platforms.len() as f64 * 0.05).min(3.0);
-                side = !side;
             }
         }
     }
 
     fn jump(&mut self) {
         if self.state == State::Charging && self.charge > 0.0 {
-            self.vel_y = JUMP_POWER * self.charge * 0.4;
+            self.vel_y = JUMP_POWER * self.charge * 0.2;
             self.vel_x = self.dir * HORIZ_SPEED * self.charge * 0.18;
             self.state = State::Airborne;
             self.charge = 0.0;

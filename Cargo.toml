@@ -1,8 +1,8 @@
 [package]
-name = "jump-high"
+name = "paws-games"
 version = "0.2.0"
 edition = "2021"
-description = "A Jump King-style terminal platformer — hold SPACE to charge, release to jump, don't fall!"
+description = "Terminal games for Paws — Jump High, Earth Online"
 license = "MIT"
 
 [dependencies]

@@ -1,1 +1,1 @@
-/Users/tangyinghao/workspace/jump-high/target/release/jump-high: /Users/tangyinghao/workspace/jump-high/src/main.rs
+/Users/tangyinghao/workspace/paws-games/target/release/jump-high: /Users/tangyinghao/workspace/paws-games/src/bin/jump-high.rs
