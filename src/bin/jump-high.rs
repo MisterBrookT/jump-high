@@ -316,7 +316,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             return Ok(());
                         }
                         KeyCode::Char('p') if press => game.toggle_pause(),
-                        KeyCode::Char(' ') => {
+                        code @ (KeyCode::Char(' ') | KeyCode::Up) => {
                             if game.paused {
                                 continue;
                             }
@@ -332,6 +332,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         game.charge = 0.0;
                                         game.space_count = 0;
                                         game.ticks_since_space = 0;
+                                        // ↑ charges a straight-up jump; ←→ can still angle it
+                                        if code == KeyCode::Up {
+                                            game.dir = 0.0;
+                                        }
                                     }
                                     State::Charging => {
                                         game.space_count += 1;
@@ -486,7 +490,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Paragraph::new(hud_line).render(Rect::new(0, 0, area.width, 1), buf);
 
             // Controls hint
-            let hint = " SPACE: charge → SPACE: jump  ←→: aim  p: pause  q: quit ";
+            let hint = " ↑ hold = charge · release = jump up · ←→ aim · p pause · q quit ";
             let hint_line = Line::from(hint).style(Style::default().fg(Color::Gray));
             Paragraph::new(hint_line).render(Rect::new(0, area.height - 1, area.width, 1), buf);
 
