@@ -31,9 +31,9 @@ const C_NONE: Color = Color::Reset;               // transparent (skip)
 //  Row 2:  ▄ █ █ █ █ █ ╶    (body + tail stub)
 //  Row 3:  . █ . █ . █ .    (legs)
 const SPRITE_STAND: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
-    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╶', C_TAIL)],
+    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('█', C_BODY), ('▀', C_NOSE), ('█', C_BODY), ('█', C_BODY), (' ', C_NONE)],
     [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
 ];
 
@@ -51,17 +51,17 @@ const SPRITE_JUMP: [[(char, Color); 7]; 4] = [
 
 // Standing facing RIGHT (nose points right, tail on left)
 const SPRITE_STAND_RIGHT: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), (' ', C_NONE)],
-    [('╴', C_TAIL), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('▄', C_BODY)],
+    [(' ', C_NONE), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▶', C_NOSE)],
+    [('╰', C_TAIL), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), (' ', C_NONE)],
     [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
 ];
 
 // Standing facing LEFT (same as original SPRITE_STAND — nose points left, tail on right)
 const SPRITE_STAND_LEFT: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
-    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╶', C_TAIL)],
+    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), (' ', C_NONE)],
+    [('◀', C_NOSE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('█', C_BODY), ('▄', C_BODY), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╯', C_TAIL)],
     [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
 ];
 
@@ -163,7 +163,7 @@ impl Game {
                 // in (>=2 bytes) gaps are tiny, so 4 ticks (~130ms) is snappy.
                 // Before repeat starts, wait longer (~330ms) to not misfire during
                 // the OS key-repeat initial delay.
-                let thresh = if self.space_count >= 2 { 4 } else { 10 };
+                let thresh = if self.space_count >= 2 { 4 } else { 18 };
                 if self.ticks_since_space >= thresh {
                     self.jump();
                 }
