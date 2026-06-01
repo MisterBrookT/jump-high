@@ -1,0 +1,11 @@
+[package]
+name = "jump-high"
+version = "0.1.0"
+edition = "2021"
+description = "A terminal Doodle-Jump-style game"
+license = "MIT"
+
+[dependencies]
+ratatui = "=0.29.0"
+crossterm = "=0.28.1"
+rand = "=0.8.5"
