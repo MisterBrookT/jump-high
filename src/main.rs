@@ -16,20 +16,37 @@ const PLATFORM_WIDTH: u16 = 10;
 const PLAYER_WIDTH: f64 = 7.0;
 const PLAYER_HEIGHT: f64 = 4.0;
 
-// Dog sprites — standing (4 lines)
-const DOG_STAND: &[&str] = &[
-    " ╭∪╮ ",
-    "(• ᴥ •)",
-    " /| |\\ ",
-    "  ╰─╯ ",
+// Pixel-art dog sprite colors
+const C_BODY: Color = Color::Rgb(200, 150, 90);   // warm tan
+const C_DARK: Color = Color::Rgb(120, 80, 40);    // dark outline/ears
+const C_NOSE: Color = Color::Rgb(60, 40, 30);     // nose
+const C_EYE: Color = Color::Rgb(255, 255, 255);   // eye highlight
+const C_TAIL: Color = Color::Rgb(180, 130, 70);   // tail
+const C_NONE: Color = Color::Reset;               // transparent (skip)
+
+// Sprite: (char, fg_color) per cell. C_NONE = skip (transparent).
+// Standing pose: 4 rows x 7 cols
+//  Row 0:  . ▄ ▄ . . ▄ .    (ears + head top)
+//  Row 1:  . █ ● █ ▄ █ .    (head: eye, nose, snout)
+//  Row 2:  ▄ █ █ █ █ █ ╶    (body + tail stub)
+//  Row 3:  . █ . █ . █ .    (legs)
+const SPRITE_STAND: [[(char, Color); 7]; 4] = [
+    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
+    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╶', C_TAIL)],
+    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
 ];
 
-// Dog sprites — jumping/airborne (4 lines)
-const DOG_JUMP: &[&str] = &[
-    " ╭∪╮ ",
-    "(• ᴥ •)",
-    " ╰┬┬╯ ",
-    "  ╰╯  ",
+// Jumping pose: 4 rows x 7 cols (legs tucked, ears up)
+//  Row 0:  . █ █ . . █ .    (ears tall)
+//  Row 1:  . █ ● █ ▄ █ .    (head)
+//  Row 2:  ▄ █ █ █ █ █ ─    (body + tail out)
+//  Row 3:  . . ▀ ▀ ▀ . .    (tucked legs)
+const SPRITE_JUMP: [[(char, Color); 7]; 4] = [
+    [(' ', C_NONE), ('█', C_DARK), ('█', C_DARK), (' ', C_NONE), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
+    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('─', C_TAIL)],
+    [(' ', C_NONE), (' ', C_NONE), ('▀', C_BODY), ('▀', C_BODY), ('▀', C_BODY), (' ', C_NONE), (' ', C_NONE)],
 ];
 
 // Platform styles
@@ -45,7 +62,6 @@ const PLAT_COLORS: &[(u8, u8, u8)] = &[
     (60, 130, 90),
 ];
 
-// Ground pattern
 const GROUND_CHAR: char = '▓';
 const GROUND_TOP: char = '▔';
 
@@ -76,7 +92,7 @@ struct Game {
     platforms: Vec<Platform>,
     width: u16,
     height: u16,
-    space_was_held: bool,
+    paused: bool,
 }
 
 impl Game {
@@ -112,11 +128,12 @@ impl Game {
             platforms,
             width: w,
             height: h,
-            space_was_held: false,
+            paused: false,
         }
     }
 
     fn update(&mut self) {
+        if self.paused { return; }
         match self.state {
             State::Grounded => {}
             State::Charging => {
@@ -127,7 +144,6 @@ impl Game {
                 self.px += self.vel_x;
                 self.py += self.vel_y;
 
-                // Wall collision
                 if self.px < 0.0 {
                     self.px = 0.0;
                     self.vel_x = 0.0;
@@ -137,7 +153,6 @@ impl Game {
                     self.vel_x = 0.0;
                 }
 
-                // Platform collision (only when falling)
                 if self.vel_y > 0.0 {
                     for p in &self.platforms {
                         let plat_left = p.x as f64;
@@ -161,7 +176,7 @@ impl Game {
             }
         }
 
-        // Camera follows player
+        // Camera
         let target_cam = self.py - self.height as f64 * 0.5;
         if target_cam < self.camera_y {
             self.camera_y += (target_cam - self.camera_y) * 0.1;
@@ -176,7 +191,7 @@ impl Game {
             self.max_height = height;
         }
 
-        // Generate more platforms above if needed
+        // Generate more platforms
         let top_visible = self.camera_y - 10.0;
         let highest = self.platforms.iter().map(|p| p.y).fold(f64::MAX, f64::min);
         if highest > top_visible {
@@ -205,10 +220,16 @@ impl Game {
         }
     }
 
-    fn start_charge(&mut self) {
-        if self.state == State::Grounded {
-            self.state = State::Charging;
-            self.charge = 0.0;
+    fn toggle_pause(&mut self) {
+        if self.paused {
+            self.paused = false;
+        } else {
+            // Entering pause: cancel charge if charging
+            if self.state == State::Charging {
+                self.state = State::Grounded;
+                self.charge = 0.0;
+            }
+            self.paused = true;
         }
     }
 }
@@ -220,19 +241,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let size = terminal.size()?;
     let mut game = Game::new(size.width, size.height);
-    let mut space_pressed_this_frame: bool;
 
     loop {
         let frame_start = Instant::now();
 
-        // Input — track whether space was pressed THIS frame
-        space_pressed_this_frame = false;
+        // Input
         while event::poll(Duration::from_millis(0))? {
             match event::read()? {
                 Event::Key(key) => {
-                    if key.kind != KeyEventKind::Press {
-                        continue;
-                    }
+                    if key.kind != KeyEventKind::Press { continue; }
                     match key.code {
                         KeyCode::Char('q') => {
                             disable_raw_mode()?;
@@ -240,17 +257,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             println!("Max height: {:.0}", game.max_height);
                             return Ok(());
                         }
+                        KeyCode::Char('p') => {
+                            game.toggle_pause();
+                        }
                         KeyCode::Char(' ') => {
-                            space_pressed_this_frame = true;
-                            game.start_charge();
+                            if game.paused { continue; }
+                            // Toggle model: first press = start charge, second = jump
+                            match game.state {
+                                State::Grounded => {
+                                    game.state = State::Charging;
+                                    game.charge = 0.0;
+                                    game.dir = 0.0;
+                                }
+                                State::Charging => {
+                                    game.jump();
+                                }
+                                State::Airborne => {}
+                            }
                         }
                         KeyCode::Left => {
-                            if game.state == State::Charging || game.state == State::Grounded {
+                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
                                 game.dir = -1.0;
                             }
                         }
                         KeyCode::Right => {
-                            if game.state == State::Charging || game.state == State::Grounded {
+                            if !game.paused && (game.state == State::Charging || game.state == State::Grounded) {
                                 game.dir = 1.0;
                             }
                         }
@@ -265,13 +296,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // Jump mechanic: detect space release by tracking held state
-        // If space WAS held last frame but NOT this frame → fire jump
-        if game.space_was_held && !space_pressed_this_frame {
-            game.jump();
-        }
-        game.space_was_held = space_pressed_this_frame;
-
         game.update();
 
         // Render
@@ -282,14 +306,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Draw platforms
             for (pi, p) in game.platforms.iter().enumerate() {
                 let sy = (p.y - game.camera_y) as i16;
-                if sy < 0 || sy >= area.height as i16 {
-                    continue;
-                }
+                if sy < 0 || sy >= area.height as i16 { continue; }
                 let is_ground = pi == 0;
                 let (r, g, b) = if is_ground { (90, 70, 50) } else { PLAT_COLORS[p.style] };
 
                 if is_ground {
-                    // Ground: top edge + fill
                     for dx in 0..p.width.min(area.width) {
                         let px = p.x + dx;
                         if px < area.width {
@@ -299,7 +320,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                     }
-                    // Fill row below ground top
                     let gy = sy + 1;
                     if gy >= 0 && gy < area.height as i16 {
                         for dx in 0..p.width.min(area.width) {
@@ -313,7 +333,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 } else {
-                    // Styled platform
                     let style_chars = PLAT_STYLES[p.style];
                     for dx in 0..p.width {
                         let px = p.x + dx;
@@ -327,23 +346,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            // Draw dog
+            // Draw dog sprite
             let dog_sx = game.px as u16;
             let dog_sy = (game.py - game.camera_y) as i16;
-            let sprite = if game.state == State::Airborne { DOG_JUMP } else { DOG_STAND };
+            let sprite = if game.state == State::Airborne { &SPRITE_JUMP } else { &SPRITE_STAND };
 
             for (row, line) in sprite.iter().enumerate() {
                 let sy = dog_sy + row as i16;
-                if sy < 0 || sy >= area.height as i16 {
-                    continue;
-                }
-                for (i, ch) in line.chars().enumerate() {
-                    if ch == ' ' { continue; }
-                    let x = dog_sx + i as u16;
+                if sy < 0 || sy >= area.height as i16 { continue; }
+                for (col, &(ch, color)) in line.iter().enumerate() {
+                    if color == C_NONE { continue; }
+                    let x = dog_sx + col as u16;
                     if x < area.width {
                         if let Some(cell) = buf.cell_mut((x, sy as u16)) {
                             cell.set_char(ch);
-                            cell.set_fg(Color::Rgb(255, 200, 100));
+                            cell.set_fg(color);
                         }
                     }
                 }
@@ -368,7 +385,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-
                 // Direction indicator
                 let dir_str = match game.dir as i32 {
                     -1 => "← ",
@@ -390,18 +406,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // HUD
-            let hud = format!(" Height: {:.0}  Best: {:.0} ",
-                -(game.py - (game.height as f64 - 2.0 - PLAYER_HEIGHT)).min(0.0),
-                game.max_height
-            );
+            let cur_height = (-(game.py - (game.height as f64 - 2.0 - PLAYER_HEIGHT))).max(0.0);
+            let hud = format!(" Height: {:.0}  Best: {:.0} ", cur_height, game.max_height);
             let hud_line = Line::from(hud).style(Style::default().fg(Color::White).bg(Color::DarkGray));
             Paragraph::new(hud_line).render(Rect::new(0, 0, area.width, 1), buf);
 
             // Controls hint
-            let hint = " SPACE: hold to charge, release to jump  ←→: aim  q: quit ";
+            let hint = " SPACE: charge → SPACE: jump  ←→: aim  p: pause  q: quit ";
             let hint_line = Line::from(hint).style(Style::default().fg(Color::Gray));
-            Paragraph::new(hint_line)
-                .render(Rect::new(0, area.height - 1, area.width, 1), buf);
+            Paragraph::new(hint_line).render(Rect::new(0, area.height - 1, area.width, 1), buf);
+
+            // Pause banner
+            if game.paused {
+                let msg = "  ⏸  PAUSED  ⏸  ";
+                let mx = area.width.saturating_sub(msg.len() as u16) / 2;
+                let my = area.height / 2;
+                for (i, ch) in msg.chars().enumerate() {
+                    let x = mx + i as u16;
+                    if x < area.width {
+                        if let Some(cell) = buf.cell_mut((x, my)) {
+                            cell.set_char(ch);
+                            cell.set_fg(Color::White);
+                            cell.set_bg(Color::Rgb(80, 40, 40));
+                        }
+                    }
+                }
+            }
         })?;
 
         // Frame timing
