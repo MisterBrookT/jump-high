@@ -1,10 +1,38 @@
 [package]
 name = "paws-games"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
-description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris"
+description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris, Snake, 2048, Breakout, Space Invaders"
 license = "MIT"
 
 [dependencies]
 ratatui = "=0.29.0"
 crossterm = "=0.28.1"
+
+[[bin]]
+name = "jump-high"
+path = "src/bin/jump-high.rs"
+
+[[bin]]
+name = "earth-online"
+path = "src/bin/earth-online.rs"
+
+[[bin]]
+name = "tetris"
+path = "src/bin/tetris.rs"
+
+[[bin]]
+name = "snake"
+path = "src/bin/snake.rs"
+
+[[bin]]
+name = "2048"
+path = "src/bin/two-zero-four-eight.rs"
+
+[[bin]]
+name = "breakout"
+path = "src/bin/breakout.rs"
+
+[[bin]]
+name = "space-invaders"
+path = "src/bin/space-invaders.rs"
