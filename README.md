@@ -1,39 +1,30 @@
-# Jump High 🐕
+# 🐾 Paws Games
 
-A **Jump King-style** terminal platformer built with Rust + ratatui.
+A community library of standalone terminal games that the [Paws](https://github.com/interesting-vibe-coding/paws) host can run in a tab while your AI agent works.
 
-Press SPACE to start charging, press SPACE again to jump. Miss a platform and you fall all the way down. No checkpoints, no mercy — just you, a pixel-art dog, and gravity.
+## Games
 
-## How to Play
-
-The core mechanic is simple but punishing:
-
-1. **Press SPACE** to start charging (power bar fills automatically)
-2. **Press ←/→** while charging to aim your jump direction
-3. **Press SPACE again** to jump — the longer you waited, the higher you go
-4. Land on a platform or **fall all the way down** to whatever catches you
-
-There is no game over. You just fall and try again. Like Jump King.
-
-## Controls
-
-| Key | Action |
-|-----|--------|
-| SPACE | Start charging (when grounded) |
-| SPACE | Fire jump (when charging) |
-| ← → | Aim direction (while charging) |
-| p | Pause / Resume |
-| q | Quit |
+| ID | Name | Description |
+|----|------|-------------|
+| `jump-high` | 🐕 Dog Jump | Jump King-style platformer — charge, aim, and pray |
+| `earth-online` | 🌍 Earth Online | Side quests for touching grass IRL |
+| `tetris` | 🧱 Tetris | Classic block-stacking with levels and scoring |
 
 ## Install
 
+Install any game as a standalone binary:
+
 ```bash
-cargo install --path .
+cargo install --git https://github.com/MisterBrookT/paws-games --bin jump-high
+cargo install --git https://github.com/MisterBrookT/paws-games --bin earth-online
+cargo install --git https://github.com/MisterBrookT/paws-games --bin tetris
 ```
 
-## Score
+Once on `PATH`, Paws discovers it via the registry and lets you launch it from the game picker.
 
-Score = maximum height reached. The platforms get trickier as you climb.
+## Contributing
+
+Want to add a game? See [CONTRIBUTING.md](CONTRIBUTING.md) for the step-by-step guide and the game binary contract. Detailed technical docs live in [`docs/`](docs/).
 
 ## License
 
