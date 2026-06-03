@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g. v0.4.0)'
+        required: true
+        default: 'v0.4.0'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          body: |
+            Community game library for Paws: 7 standalone terminal games.
+
+            Install all games via Homebrew:
+            ```bash
+            brew tap interesting-vibe-coding/paws
+            brew install paws-games
+            ```
+
+            Or install individual games:
+            ```bash
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin jump-high
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin earth-online
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin tetris
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin snake
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin 2048
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin breakout
+            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin space-invaders
+            ```
+          draft: false
+          prerelease: false
+
+      - name: Compute source archive SHA256
+        run: |
+          sleep 10
+          TAG="${{ github.event.inputs.tag_name }}"
+          ARCHIVE_URL="https://github.com/interesting-vibe-coding/paws-games/archive/refs/tags/${TAG}.tar.gz"
+          SHA256=$(curl -sL "$ARCHIVE_URL" | sha256sum | cut -d' ' -f1)
+          echo "=== HOMEBREW SHA256 ==="
+          echo "url: $ARCHIVE_URL"
+          echo "sha256: $SHA256"
+          echo "=== END HOMEBREW SHA256 ==="
