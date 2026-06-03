@@ -15,9 +15,9 @@ A community library of standalone terminal games that the [Paws](https://github.
 Install any game as a standalone binary:
 
 ```bash
-cargo install --git https://github.com/MisterBrookT/paws-games --bin jump-high
-cargo install --git https://github.com/MisterBrookT/paws-games --bin earth-online
-cargo install --git https://github.com/MisterBrookT/paws-games --bin tetris
+cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin jump-high
+cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin earth-online
+cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin tetris
 ```
 
 Once on `PATH`, Paws discovers it via the registry and lets you launch it from the game picker.

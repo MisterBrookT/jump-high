@@ -4,7 +4,7 @@
 
 1. **Add your game binary** — create `src/bin/<id>.rs` following the [Game Contract](docs/GAME_CONTRACT.md).
 2. **Build** — run `cargo build --release` and ensure it compiles with no errors.
-3. **Open a PR** to this repo (`MisterBrookT/paws-games`).
+3. **Open a PR** to this repo (`interesting-vibe-coding/paws-games`).
 4. **Register in Paws** — add a matching entry to the `registry.toml` in the [paws repo](https://github.com/interesting-vibe-coding/paws) so the game appears in the picker.
 
 ## registry.toml entry format
@@ -17,7 +17,7 @@ id = "<id>"
 name = "<Display Name>"
 icon = "<emoji>"
 cmd = "<id>"
-install = "cargo install --git https://github.com/MisterBrookT/paws-games --bin <id>"
+install = "cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin <id>"
 description = "One-line description of the game."
 ```
 
@@ -29,7 +29,7 @@ id = "tetris"
 name = "Tetris"
 icon = "🧱"
 cmd = "tetris"
-install = "cargo install --git https://github.com/MisterBrookT/paws-games --bin tetris"
+install = "cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin tetris"
 description = "Classic block-stacking with levels and scoring."
 ```
 

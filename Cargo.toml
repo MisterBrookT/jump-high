@@ -1,6 +1,6 @@
 [package]
 name = "paws-games"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris"
 license = "MIT"
