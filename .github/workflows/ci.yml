@@ -6,26 +6,18 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  check:
-    name: Check
-    runs-on: macos-14
+  audit:
+    name: Audit formulas
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: "1.94.1"
-          components: clippy,rustfmt
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo build --all-targets
-      - run: cargo clippy -- -D warnings
-      - run: cargo fmt --check
+
+      - name: Tap local repo
+        run: brew tap interesting-vibe-coding/paws "$(pwd)"
+
+      - name: Audit paws formula
+        run: brew audit --strict interesting-vibe-coding/paws/paws
+
+      - name: Audit paws-games formula
+        run: brew audit --strict interesting-vibe-coding/paws/paws-games

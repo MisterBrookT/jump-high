@@ -1,3 +1,5 @@
+[![CI](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml/badge.svg)](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml)
+
 # 🐾 Paws Games
 
 A community library of standalone terminal games that the [Paws](https://github.com/interesting-vibe-coding/paws) host can run in a tab while your AI agent works.
