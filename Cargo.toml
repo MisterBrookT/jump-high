@@ -4,6 +4,10 @@ version = "0.4.0"
 edition = "2021"
 description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris, Snake, 2048, Breakout, Space Invaders"
 license = "MIT"
+homepage = "https://github.com/interesting-vibe-coding/paws-games"
+repository = "https://github.com/interesting-vibe-coding/paws-games"
+keywords = ["game", "terminal", "tui", "arcade", "games"]
+categories = ["command-line-utilities", "games"]
 
 [dependencies]
 ratatui = "=0.29.0"
