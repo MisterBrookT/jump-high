@@ -1,7 +1,7 @@
 use crossterm::{
     event::{
-        self, Event, KeyCode, KeyEventKind, KeyboardEnhancementFlags,
-        PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+        self, Event, KeyCode, KeyEventKind, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
+        PushKeyboardEnhancementFlags,
     },
     terminal::{
         disable_raw_mode, enable_raw_mode, supports_keyboard_enhancement, EnterAlternateScreen,
@@ -10,7 +10,10 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{prelude::*, widgets::*};
-use std::{io::stdout, time::{Duration, Instant}};
+use std::{
+    io::stdout,
+    time::{Duration, Instant},
+};
 
 const TICK_MS: u64 = 33;
 const GRAVITY: f64 = 0.5;
@@ -24,7 +27,9 @@ const PLAYER_WIDTH: f64 = 7.0;
 const PLAYER_HEIGHT: f64 = 4.0;
 
 fn pseudo_rand(state: &mut u64) -> u64 {
-    *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *state = state
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     *state >> 33
 }
 
@@ -39,17 +44,19 @@ fn rand_platform_width(state: &mut u64, difficulty: u8) -> u16 {
 
 fn rand_platform_x(state: &mut u64, area_width: u16, plat_width: u16) -> u16 {
     let max_x = area_width.saturating_sub(plat_width) as u64;
-    if max_x == 0 { return 0; }
+    if max_x == 0 {
+        return 0;
+    }
     (pseudo_rand(state) % max_x) as u16
 }
 
 // Pixel-art dog sprite colors
-const C_BODY: Color = Color::Rgb(200, 150, 90);   // warm tan
-const C_DARK: Color = Color::Rgb(120, 80, 40);    // dark outline/ears
-const C_NOSE: Color = Color::Rgb(60, 40, 30);     // nose
-const C_EYE: Color = Color::Rgb(255, 255, 255);   // eye highlight
-const C_TAIL: Color = Color::Rgb(180, 130, 70);   // tail
-const C_NONE: Color = Color::Reset;               // transparent (skip)
+const C_BODY: Color = Color::Rgb(200, 150, 90); // warm tan
+const C_DARK: Color = Color::Rgb(120, 80, 40); // dark outline/ears
+const C_NOSE: Color = Color::Rgb(60, 40, 30); // nose
+const C_EYE: Color = Color::Rgb(255, 255, 255); // eye highlight
+const C_TAIL: Color = Color::Rgb(180, 130, 70); // tail
+const C_NONE: Color = Color::Reset; // transparent (skip)
 
 // Sprite: (char, fg_color) per cell. C_NONE = skip (transparent).
 // Standing pose: 4 rows x 7 cols
@@ -58,10 +65,42 @@ const C_NONE: Color = Color::Reset;               // transparent (skip)
 //  Row 2:  ▄ █ █ █ █ █ ╶    (body + tail stub)
 //  Row 3:  . █ . █ . █ .    (legs)
 const SPRITE_STAND: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('█', C_BODY), ('▀', C_NOSE), ('█', C_BODY), ('█', C_BODY), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+    [
+        (' ', C_NONE),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        (' ', C_NONE),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_BODY),
+        ('•', C_EYE),
+        ('█', C_BODY),
+        ('•', C_EYE),
+        ('█', C_BODY),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('▀', C_NOSE),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+    ],
 ];
 
 // Jumping pose: 4 rows x 7 cols (legs tucked, ears up)
@@ -70,26 +109,122 @@ const SPRITE_STAND: [[(char, Color); 7]; 4] = [
 //  Row 2:  ▄ █ █ █ █ █ ─    (body + tail out)
 //  Row 3:  . . ▀ ▀ ▀ . .    (tucked legs)
 const SPRITE_JUMP: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('█', C_DARK), ('█', C_DARK), (' ', C_NONE), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▄', C_NOSE), ('█', C_BODY), (' ', C_NONE)],
-    [('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('─', C_TAIL)],
-    [(' ', C_NONE), (' ', C_NONE), ('▀', C_BODY), ('▀', C_BODY), ('▀', C_BODY), (' ', C_NONE), (' ', C_NONE)],
+    [
+        (' ', C_NONE),
+        ('█', C_DARK),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_BODY),
+        ('•', C_EYE),
+        ('█', C_BODY),
+        ('▄', C_NOSE),
+        ('█', C_BODY),
+        (' ', C_NONE),
+    ],
+    [
+        ('▄', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('─', C_TAIL),
+    ],
+    [
+        (' ', C_NONE),
+        (' ', C_NONE),
+        ('▀', C_BODY),
+        ('▀', C_BODY),
+        ('▀', C_BODY),
+        (' ', C_NONE),
+        (' ', C_NONE),
+    ],
 ];
 
 // Standing facing RIGHT (nose points right, tail on left)
 const SPRITE_STAND_RIGHT: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), (' ', C_NONE), (' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE)],
-    [(' ', C_NONE), ('▄', C_BODY), ('█', C_BODY), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('▶', C_NOSE)],
-    [('╰', C_TAIL), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+    [
+        (' ', C_NONE),
+        (' ', C_NONE),
+        (' ', C_NONE),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('▄', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('•', C_EYE),
+        ('█', C_BODY),
+        ('▶', C_NOSE),
+    ],
+    [
+        ('╰', C_TAIL),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+    ],
 ];
 
 // Standing facing LEFT (same as original SPRITE_STAND — nose points left, tail on right)
 const SPRITE_STAND_LEFT: [[(char, Color); 7]; 4] = [
-    [(' ', C_NONE), ('▄', C_DARK), ('▄', C_DARK), ('▄', C_DARK), (' ', C_NONE), (' ', C_NONE), (' ', C_NONE)],
-    [('◀', C_NOSE), ('█', C_BODY), ('•', C_EYE),  ('█', C_BODY), ('█', C_BODY), ('▄', C_BODY), (' ', C_NONE)],
-    [(' ', C_NONE), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('█', C_BODY), ('╯', C_TAIL)],
-    [(' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE), ('█', C_DARK), (' ', C_NONE)],
+    [
+        (' ', C_NONE),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        ('▄', C_DARK),
+        (' ', C_NONE),
+        (' ', C_NONE),
+        (' ', C_NONE),
+    ],
+    [
+        ('◀', C_NOSE),
+        ('█', C_BODY),
+        ('•', C_EYE),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('▄', C_BODY),
+        (' ', C_NONE),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('█', C_BODY),
+        ('╯', C_TAIL),
+    ],
+    [
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+        ('█', C_DARK),
+        (' ', C_NONE),
+    ],
 ];
 
 // Platform styles
@@ -99,11 +234,7 @@ const PLAT_STYLES: &[&[char]] = &[
     &['▓', '█', '▓', '█', '▓', '█', '▓', '█', '▓', '█'],
 ];
 
-const PLAT_COLORS: &[(u8, u8, u8)] = &[
-    (220, 130, 50),
-    (200, 110, 40),
-    (180, 100, 30),
-];
+const PLAT_COLORS: &[(u8, u8, u8)] = &[(220, 130, 50), (200, 110, 40), (180, 100, 30)];
 
 const GROUND_CHAR: char = '▓';
 const GROUND_TOP: char = '▔';
@@ -151,14 +282,24 @@ impl Game {
             .as_nanos() as u64;
         let mut platforms = Vec::new();
         // Ground (full-width)
-        platforms.push(Platform { x: 0, y: (h as f64) - 2.0, width: w, style: 0 });
+        platforms.push(Platform {
+            x: 0,
+            y: (h as f64) - 2.0,
+            width: w,
+            style: 0,
+        });
         // Generate platforms going up
         let mut rng_y = (h as f64) - 8.0;
         let mut idx = 1usize;
         while rng_y > -(h as f64 * 5.0) {
             let pw = rand_platform_width(&mut rng_state, difficulty);
             let x = rand_platform_x(&mut rng_state, w, pw);
-            platforms.push(Platform { x, y: rng_y, width: pw, style: idx % PLAT_STYLES.len() });
+            platforms.push(Platform {
+                x,
+                y: rng_y,
+                width: pw,
+                style: idx % PLAT_STYLES.len(),
+            });
             rng_y -= 5.0 + (platforms.len() as f64 * 0.1).min(3.0);
             idx += 1;
         }
@@ -185,7 +326,9 @@ impl Game {
     }
 
     fn update(&mut self) {
-        if self.paused { return; }
+        if self.paused {
+            return;
+        }
         match self.state {
             State::Grounded => {}
             State::Charging => {
@@ -270,7 +413,12 @@ impl Game {
                 let pw = rand_platform_width(&mut self.rng_state, self.difficulty);
                 let x = rand_platform_x(&mut self.rng_state, self.width, pw);
                 let style = self.platforms.len() % PLAT_STYLES.len();
-                self.platforms.push(Platform { x, y, width: pw, style });
+                self.platforms.push(Platform {
+                    x,
+                    y,
+                    width: pw,
+                    style,
+                });
                 y -= 5.0 + (self.platforms.len() as f64 * 0.05).min(3.0);
             }
         }
@@ -403,9 +551,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Draw platforms
             for (pi, p) in game.platforms.iter().enumerate() {
                 let sy = (p.y - game.camera_y) as i16;
-                if sy < 0 || sy >= area.height as i16 { continue; }
+                if sy < 0 || sy >= area.height as i16 {
+                    continue;
+                }
                 let is_ground = pi == 0;
-                let (r, g, b) = if is_ground { (90, 70, 50) } else { PLAT_COLORS[p.style] };
+                let (r, g, b) = if is_ground {
+                    (90, 70, 50)
+                } else {
+                    PLAT_COLORS[p.style]
+                };
 
                 if is_ground {
                     for dx in 0..p.width.min(area.width) {
@@ -458,9 +612,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for (row, line) in sprite.iter().enumerate() {
                 let sy = dog_sy + row as i16;
-                if sy < 0 || sy >= area.height as i16 { continue; }
+                if sy < 0 || sy >= area.height as i16 {
+                    continue;
+                }
                 for (col, &(ch, color)) in line.iter().enumerate() {
-                    if color == C_NONE { continue; }
+                    if color == C_NONE {
+                        continue;
+                    }
                     let x = dog_sx + col as u16;
                     if x < area.width {
                         if let Some(cell) = buf.cell_mut((x, sy as u16)) {
@@ -476,16 +634,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let bar_y = dog_sy - 1;
                 if bar_y >= 0 && bar_y < area.height as i16 {
                     let filled = ((game.charge / MAX_CHARGE) * 10.0) as usize;
-                    let bar: String = format!("[{}{}]",
-                        "■".repeat(filled),
-                        "░".repeat(10 - filled),
-                    );
+                    let bar: String =
+                        format!("[{}{}]", "■".repeat(filled), "░".repeat(10 - filled),);
                     for (i, ch) in bar.chars().enumerate() {
                         let x = dog_sx + i as u16;
                         if x < area.width {
                             if let Some(cell) = buf.cell_mut((x, bar_y as u16)) {
                                 cell.set_char(ch);
-                                cell.set_fg(if filled > 7 { Color::Red } else { Color::Yellow });
+                                cell.set_fg(if filled > 7 {
+                                    Color::Red
+                                } else {
+                                    Color::Yellow
+                                });
                             }
                         }
                     }
@@ -511,7 +671,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // HUD
-            let hud = format!(" Height: {:.0}  Best: {:.0}  Lv {} ", game.cur_height.max(0.0), game.max_height, game.difficulty);
+            let hud = format!(
+                " Height: {:.0}  Best: {:.0}  Lv {} ",
+                game.cur_height.max(0.0),
+                game.max_height,
+                game.difficulty
+            );
             let hud_line = Line::from(hud).style(
                 Style::default()
                     .fg(Color::Rgb(255, 245, 210))

@@ -16,17 +16,27 @@ use ratatui::{
 };
 
 #[derive(Clone, Copy)]
-enum Lang { En, Zh, Ja, Ko }
+enum Lang {
+    En,
+    Zh,
+    Ja,
+    Ko,
+}
 fn current_lang() -> Lang {
-    let p = std::env::var("HOME").map(|h| format!("{h}/.config/paws/lang")).unwrap_or_default();
+    let p = std::env::var("HOME")
+        .map(|h| format!("{h}/.config/paws/lang"))
+        .unwrap_or_default();
     match std::fs::read_to_string(&p).unwrap_or_default().trim() {
-        "zh" => Lang::Zh, "ja" => Lang::Ja, "ko" => Lang::Ko, _ => Lang::En,
+        "zh" => Lang::Zh,
+        "ja" => Lang::Ja,
+        "ko" => Lang::Ko,
+        _ => Lang::En,
     }
 }
 
 struct Quest {
     emoji: &'static str,
-    title: [&'static str; 4],      // En, Zh, Ja, Ko
+    title: [&'static str; 4], // En, Zh, Ja, Ko
     desc: [&'static [&'static str]; 4],
     time: [&'static str; 4],
 }
@@ -202,7 +212,9 @@ const QUESTS: &[Quest] = &[
 ];
 
 fn pseudo_random(seed: u64) -> usize {
-    let h = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    let h = seed
+        .wrapping_mul(6364136223846793005)
+        .wrapping_add(1442695040888963407);
     (h >> 33) as usize % QUESTS.len()
 }
 
@@ -218,7 +230,9 @@ fn controls_line(lang: Lang) -> Vec<Span<'static>> {
         Lang::Ja => ("別のへ", "一時停止", "終了"),
         Lang::Ko => ("다시", "일시정지", "종료"),
     };
-    let key_style = Style::default().fg(Color::Rgb(180, 140, 200)).add_modifier(Modifier::BOLD);
+    let key_style = Style::default()
+        .fg(Color::Rgb(180, 140, 200))
+        .add_modifier(Modifier::BOLD);
     let txt_style = Style::default().fg(Color::Rgb(100, 100, 120));
     vec![
         Span::styled("r", key_style),
@@ -301,7 +315,9 @@ fn main() -> io::Result<()> {
                 Line::raw(""),
                 Line::from(Span::styled(
                     format!("  {} {} ", quest.emoji, quest.t_title(lang)),
-                    Style::default().fg(Color::Rgb(255, 230, 180)).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Rgb(255, 230, 180))
+                        .add_modifier(Modifier::BOLD),
                 )),
                 Line::raw(""),
             ];
