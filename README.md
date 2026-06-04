@@ -1,31 +1,37 @@
-[![CI](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml/badge.svg)](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml)
+[![CI](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml/badge.svg)](https://github.com/interesting-vibe-coding/paws-games/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+<div align="center">
 
 # 🐾 Paws Games
 
-A community library of standalone terminal games that the [Paws](https://github.com/interesting-vibe-coding/paws) host can run in a tab while your AI agent works.
+**7 standalone terminal games for [Paws](https://github.com/interesting-vibe-coding/paws)**
+
+Built with Rust + ratatui. Each game runs in a full terminal window while your AI agent thinks — a live HUD on the top row flashes when it needs you back.
+
+</div>
 
 ## Games
 
-| ID | Name | Description |
-|----|------|-------------|
-| `jump-high` | 🐕 Dog Jump | Jump King-style platformer — charge, aim, and pray |
-| `earth-online` | 🌍 Earth Online | Side quests for touching grass IRL |
-| `tetris` | 🧱 Tetris | Classic block-stacking with levels and scoring |
-| `snake` | 🐍 Snake | Eat, grow, don’t bite yourself — speed scales with score |
-| `2048` | 🎮 2048 | Slide tiles, merge numbers, reach 2048 |
-| `breakout` | 🏓 Breakout | Smash bricks with a bouncing ball — power-ups, hard bricks, 3 lives |
-| `space-invaders` | 👾 Space Invaders | Classic arcade shooter — blast the alien fleet before they land |
+| | Name | Description |
+|--|------|-------------|
+| 🐕 | **Dog Jump** | Jump King-style platformer — charge your jump, aim, and pray |
+| 🌍 | **Earth Online** | Side quests for touching grass IRL while your agent works |
+| 🧱 | **Tetris** | Classic block-stacking with levels and scoring |
+| 🐍 | **Snake** | Eat, grow, don't bite yourself — speed scales with score |
+| 🎮 | **2048** | Slide tiles, merge numbers, reach 2048 |
+| 🏓 | **Breakout** | Smash bricks with a bouncing ball — power-ups, hard bricks, 3 lives |
+| 👾 | **Space Invaders** | Classic arcade shooter — blast the alien fleet before they land |
 
 ## Install
 
-Install all games via Homebrew:
+**Via Homebrew (easiest):**
 
 ```bash
 brew tap interesting-vibe-coding/paws
 brew install paws-games
 ```
 
-Or install individual games:
+**Via Cargo (individual games):**
 
 ```bash
 cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin jump-high
@@ -37,11 +43,21 @@ cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin 
 cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin space-invaders
 ```
 
-Once on `PATH`, Paws discovers it via the registry and lets you launch it from the game picker.
+Or just open **⤓ Install games** inside the Paws picker — it installs any game in-place with a live progress log.
+
+## How it works
+
+Each game is a standalone binary that reads terminal size and renders via ratatui + crossterm. Paws hosts the binary in a PTY and overlays a 1-row HUD showing your agent's status. Any binary that follows the [game contract](docs/GAME_CONTRACT.md) works — the registry in [paws](https://github.com/interesting-vibe-coding/paws/blob/main/registry.toml) is how Paws discovers games.
 
 ## Contributing
 
-Want to add a game? See [CONTRIBUTING.md](CONTRIBUTING.md) for the step-by-step guide and the game binary contract. Detailed technical docs live in [`docs/`](docs/).
+Want to add your own game? The bar is low:
+
+1. Add `src/bin/<id>.rs` — one file, self-contained, uses only the pinned deps
+2. Follow the [game contract](docs/GAME_CONTRACT.md) (restore terminal on exit)
+3. Open a PR here, then add an entry to `registry.toml` in [paws](https://github.com/interesting-vibe-coding/paws)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 ## License
 
