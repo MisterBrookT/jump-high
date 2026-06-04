@@ -2,6 +2,12 @@
 
 All notable changes to Paws Games are documented here.
 
+## [v0.5.0] — 2026-06-04
+
+### Added
+- **Vibe Clicker** (`vibe`) — idle clicker: tap for vibes, buy upgrades, relax while your agent codes
+- CI: added Linux (`ubuntu-latest`) runner alongside macOS for cross-platform coverage
+
 ## [v0.4.0] — 2026-06-03
 
 ### Added
@@ -26,5 +32,6 @@ All notable changes to Paws Games are documented here.
 - `CONTRIBUTING.md` and `docs/GAME_CONTRACT.md` for third-party game authors
 - Homebrew formula (`paws-games`) for one-command install
 
+[v0.5.0]: https://github.com/interesting-vibe-coding/paws-games/releases/tag/v0.5.0
 [v0.4.0]: https://github.com/interesting-vibe-coding/paws-games/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/interesting-vibe-coding/paws-games/releases/tag/v0.3.0

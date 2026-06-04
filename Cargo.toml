@@ -1,8 +1,8 @@
 [package]
 name = "paws-games"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
-description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris, Snake, 2048, Breakout, Space Invaders"
+description = "A community library of standalone terminal games for the Paws host — Dog Jump, Earth Online, Tetris, Snake, 2048, Breakout, Space Invaders, Vibe Clicker"
 license = "MIT"
 homepage = "https://github.com/interesting-vibe-coding/paws-games"
 repository = "https://github.com/interesting-vibe-coding/paws-games"
@@ -40,3 +40,7 @@ path = "src/bin/breakout.rs"
 [[bin]]
 name = "space-invaders"
 path = "src/bin/space-invaders.rs"
+
+[[bin]]
+name = "vibe"
+path = "src/bin/vibe.rs"
