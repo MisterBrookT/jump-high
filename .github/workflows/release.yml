@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag name for the release (e.g. v0.4.0)'
+        description: 'Tag name for the release (e.g. v0.5.0)'
         required: true
-        default: 'v0.4.0'
+        default: 'v0.5.0'
 
 jobs:
   release:
@@ -18,31 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          TAG="${{ github.event.inputs.tag_name }}"
+          BODY=$(awk "/^## \\[${TAG}\\]/,/^## \\[v/" CHANGELOG.md \
+            | grep -v "^## \\[v" | sed '/^$/d' | head -40)
+          if [ -z "$BODY" ]; then
+            BODY="See [CHANGELOG.md](https://github.com/interesting-vibe-coding/paws-games/blob/main/CHANGELOG.md) for details."
+          fi
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag_name }}
           target_commitish: ${{ github.sha }}
-          generate_release_notes: true
-          body: |
-            Community game library for Paws: 7 standalone terminal games.
-
-            Install all games via Homebrew:
-            ```bash
-            brew tap interesting-vibe-coding/paws
-            brew install paws-games
-            ```
-
-            Or install individual games:
-            ```bash
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin jump-high
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin earth-online
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin tetris
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin snake
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin 2048
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin breakout
-            cargo install --git https://github.com/interesting-vibe-coding/paws-games --bin space-invaders
-            ```
+          body: ${{ steps.changelog.outputs.body }}
           draft: false
           prerelease: false
 
