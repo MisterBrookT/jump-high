@@ -181,7 +181,7 @@ fn draw(f: &mut Frame, g: &Game) {
                 Style::new().fg(Color::Cyan).bg(bg),
             ),
             Span::styled(
-                format!("{}", u.desc),
+                u.desc.to_string(),
                 Style::new().fg(Color::DarkGray).bg(bg),
             ),
             Span::styled(
