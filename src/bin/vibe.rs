@@ -4,7 +4,10 @@ use crossterm::{
     ExecutableCommand,
 };
 use ratatui::{prelude::*, widgets::*};
-use std::{io::stdout, time::{Duration, Instant}};
+use std::{
+    io::stdout,
+    time::{Duration, Instant},
+};
 
 struct Guard;
 impl Drop for Guard {
@@ -45,11 +48,46 @@ impl Game {
             vibes: 0,
             taps: 0,
             upgrades: vec![
-                Upgrade { name: "Auto-paw",     emoji: "🐾", desc: " 1/s", base_cost: 15,    rate: 1,   count: 0 },
-                Upgrade { name: "Vibe buddy",   emoji: "🐱", desc: " 5/s", base_cost: 100,   rate: 5,   count: 0 },
-                Upgrade { name: "Hype engine",  emoji: "🚀", desc: "20/s", base_cost: 500,   rate: 20,  count: 0 },
-                Upgrade { name: "Vibe reactor", emoji: "⚡", desc: "100/s",base_cost: 3000,  rate: 100, count: 0 },
-                Upgrade { name: "Galaxy brain", emoji: "🌌", desc: "500/s",base_cost: 15000, rate: 500, count: 0 },
+                Upgrade {
+                    name: "Auto-paw",
+                    emoji: "🐾",
+                    desc: " 1/s",
+                    base_cost: 15,
+                    rate: 1,
+                    count: 0,
+                },
+                Upgrade {
+                    name: "Vibe buddy",
+                    emoji: "🐱",
+                    desc: " 5/s",
+                    base_cost: 100,
+                    rate: 5,
+                    count: 0,
+                },
+                Upgrade {
+                    name: "Hype engine",
+                    emoji: "🚀",
+                    desc: "20/s",
+                    base_cost: 500,
+                    rate: 20,
+                    count: 0,
+                },
+                Upgrade {
+                    name: "Vibe reactor",
+                    emoji: "⚡",
+                    desc: "100/s",
+                    base_cost: 3000,
+                    rate: 100,
+                    count: 0,
+                },
+                Upgrade {
+                    name: "Galaxy brain",
+                    emoji: "🌌",
+                    desc: "500/s",
+                    base_cost: 15000,
+                    rate: 500,
+                    count: 0,
+                },
             ],
             selected: 0,
             last_tick: Instant::now(),
@@ -101,7 +139,10 @@ fn fmt_n(n: u64) -> String {
 
 fn draw(f: &mut Frame, g: &Game) {
     let area = f.area();
-    f.render_widget(Block::default().style(Style::default().bg(Color::Black)), area);
+    f.render_widget(
+        Block::default().style(Style::default().bg(Color::Black)),
+        area,
+    );
 
     let [header, body, footer] = Layout::vertical([
         Constraint::Length(2),
@@ -119,11 +160,8 @@ fn draw(f: &mut Frame, g: &Game) {
     );
 
     // ── body: left = tap panel, right = upgrades ──
-    let [left, right] = Layout::horizontal([
-        Constraint::Percentage(45),
-        Constraint::Percentage(55),
-    ])
-    .areas(body);
+    let [left, right] =
+        Layout::horizontal([Constraint::Percentage(45), Constraint::Percentage(55)]).areas(body);
 
     // tap panel
     let rate = g.rate();
@@ -133,25 +171,29 @@ fn draw(f: &mut Frame, g: &Game) {
             Span::styled(fmt_n(g.vibes), Style::new().fg(Color::Yellow).bold()),
             Span::styled(" vibes", Style::new().fg(Color::DarkGray)),
         ]),
-        Line::from(vec![
-            Span::styled(format!("{}/sec", fmt_n(rate)), Style::new().fg(Color::Cyan)),
-        ]),
+        Line::from(vec![Span::styled(
+            format!("{}/sec", fmt_n(rate)),
+            Style::new().fg(Color::Cyan),
+        )]),
         Line::from(""),
         Line::from(Span::styled(
             "── SPACE to vibe ──",
             Style::new().fg(Color::Green),
         )),
         Line::from(""),
-        Line::from(vec![
-            Span::styled(format!("{} taps", g.taps), Style::new().fg(Color::DarkGray)),
-        ]),
+        Line::from(vec![Span::styled(
+            format!("{} taps", g.taps),
+            Style::new().fg(Color::DarkGray),
+        )]),
     ];
     f.render_widget(
-        Paragraph::new(vibe_text).alignment(Alignment::Center).block(
-            Block::default()
-                .borders(Borders::RIGHT)
-                .border_style(Style::new().fg(Color::DarkGray)),
-        ),
+        Paragraph::new(vibe_text)
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::RIGHT)
+                    .border_style(Style::new().fg(Color::DarkGray)),
+            ),
         left,
     );
 
@@ -170,7 +212,11 @@ fn draw(f: &mut Frame, g: &Game) {
         } else {
             (Color::Black, Color::Gray)
         };
-        let cost_fg = if affordable { Color::Green } else { Color::DarkGray };
+        let cost_fg = if affordable {
+            Color::Green
+        } else {
+            Color::DarkGray
+        };
         Line::from(vec![
             Span::styled(
                 format!(" {} {:<14}", u.emoji, u.name),
@@ -180,10 +226,7 @@ fn draw(f: &mut Frame, g: &Game) {
                 format!("x{:<3}", u.count),
                 Style::new().fg(Color::Cyan).bg(bg),
             ),
-            Span::styled(
-                u.desc.to_string(),
-                Style::new().fg(Color::DarkGray).bg(bg),
-            ),
+            Span::styled(u.desc.to_string(), Style::new().fg(Color::DarkGray).bg(bg)),
             Span::styled(
                 format!(" [{}]", fmt_n(cost)),
                 Style::new().fg(cost_fg).bg(bg),
@@ -192,10 +235,7 @@ fn draw(f: &mut Frame, g: &Game) {
     }))
     .collect();
 
-    f.render_widget(
-        Paragraph::new(upgrade_lines),
-        right,
-    );
+    f.render_widget(Paragraph::new(upgrade_lines), right);
 
     // ── footer ──
     f.render_widget(
